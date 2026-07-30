@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>厨房练习簿 · zjwssm</title>
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body>
+    <section id="introOverlay" class="intro-overlay" aria-label="进入前互动">
+      <div class="intro-panel">
+        <p class="intro-tag">zjwssm · My Kitchen Space</p>
+        <h1>先选一个厨房入口</h1>
+        <p id="introStatus" class="intro-copy">这是一份记录我做菜成长的个人网站，里面有我做过的菜、复盘和推荐。</p>
+        <div id="introShowcase" class="intro-showcase"></div>
+        <div class="intro-actions">
+          <button id="introStartButton" class="primary" type="button">进入我的厨房</button>
+          <button id="introViewButton" class="ghost" type="button">先看看做过什么</button>
+          <button id="introSkipButton" class="ghost" type="button">直接跳过</button>
+        </div>
+      </div>
+    </section>
+
+    <main class="app-shell">
+      <section class="topbar" aria-label="概览">
+        <div>
+          <p class="eyebrow">zjwssm · Kitchen Log</p>
+          <h1>厨房练习簿</h1>
+          <p class="hero-note">你来了O.O</p>
+        </div>
+        <div class="stats" aria-live="polite">
+          <div><span id="statRecipes">0</span><small>道菜</small></div>
+          <div><span id="statTries">0</span><small>次练习</small></div>
+          <div><span id="statBest">-</span><small>最高分</small></div>
+          <div><span id="statPhotos">0</span><small>照片</small></div>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <aside class="panel recipe-list-panel">
+          <div class="panel-head">
+            <h2>我的菜</h2>
+            <button class="icon-button" id="newRecipeButton" title="新建记录" type="button">+</button>
+          </div>
+          <label class="search-box">
+            <span>搜索</span>
+            <input id="searchInput" type="search" placeholder="菜名 / 食材 / 标签" />
+          </label>
+          <div class="recipe-list" id="recipeList"></div>
+        </aside>
+
+        <section class="panel editor-panel">
+          <div class="tabs" role="tablist" aria-label="功能">
+            <button class="tab active" data-tab="record" type="button">记录</button>
+            <button class="tab" data-tab="recommend" type="button">食材推荐</button>
+            <button class="tab" data-tab="review" type="button">复盘</button>
+            <button class="tab" data-tab="data" type="button">数据</button>
+          </div>
+
+          <form id="recipeForm" class="tab-view active" data-view="record">
+            <section class="record-section quick-record">
+              <div class="section-head">
+                <div>
+                  <h2>先记住这次做了什么</h2>
+                  <p>做完饭很累时，只填这一块也够用。</p>
+                </div>
+                <span id="saveState" class="save-state">未保存</span>
+              </div>
+              <div class="form-grid">
+                <label>菜名<input id="nameInput" required placeholder="比如：番茄炒蛋" /></label>
+                <label>用到的食材<input id="ingredientsInput" placeholder="番茄，鸡蛋，葱" /></label>
+                <label>本次评分<input id="ratingInput" type="range" min="1" max="5" step="1" value="3" /><output id="ratingOutput">3 分</output></label>
+                <label>这次真正学到什么<input id="learnedInput" placeholder="比如：鸡蛋先盛出更嫩" /></label>
+              </div>
+            </section>
+
+            <details class="record-section" open>
+              <summary>过程和结果</summary>
+              <div class="details-body">
+                <div class="voice-row">
+                  <button class="ghost" id="voiceButton" type="button">语音输入</button>
+                  <span id="voiceStatus" class="status-line">可对着当前输入框说话</span>
+                </div>
+                <label>准备过程<textarea id="prepInput" rows="4" placeholder="切配、腌制、焯水、提前处理。"></textarea></label>
+                <label>下锅步骤<textarea id="stepsInput" rows="5" placeholder="按自己的话写，不必照抄教程。比如：先把蛋炒到刚凝固，盛出；番茄炒出汁后再回锅。"></textarea></label>
+                <div class="form-grid">
+                  <label>试吃感受<textarea id="tastingInput" rows="4" placeholder="咸淡、口感、香味、家人评价。"></textarea></label>
+                  <label>翻车点<textarea id="mistakesInput" rows="4" placeholder="糊锅、水太多、肉柴、没入味。"></textarea></label>
+                  <label>下次要改<textarea id="nextInput" rows="4" placeholder="少放盐、先焯水、切薄一点、晚点下蒜..."></textarea></label>
+                </div>
+                <div class="summary-box">
+                  <div class="summary-head">
+                    <strong>自动摘要</strong>
+                    <button class="ghost" id="applySummaryButton" type="button">一键带入</button>
+                  </div>
+                  <div class="summary-grid">
+                    <label>可能的食材<textarea id="summaryIngredients" rows="3" readonly></textarea></label>
+                    <label>可能的调味料<textarea id="summarySeasonings" rows="3" readonly></textarea></label>
+                  </div>
+                </div>
+              </div>
+            </details>
+
+            <details class="record-section">
+              <summary>来源、调味和标签</summary>
+              <div class="details-body">
+                <div class="form-grid">
+                  <label>学习来源<input id="sourceInput" placeholder="视频作者 / 链接 / 家里人教的" /></label>
+                  <label>难度<select id="difficultyInput"><option value="入门">入门</option><option value="普通">普通</option><option value="有挑战">有挑战</option></select></label>
+                  <label>日期<input id="dateInput" type="date" /></label>
+                  <label>用时<input id="durationInput" type="number" min="1" placeholder="分钟" /></label>
+                  <label>份量<input id="portionsInput" type="number" min="1" placeholder="几人份" /></label>
+                  <label>第几次做<input id="repeatInput" type="number" min="1" /></label>
+                  <label>调味料<input id="seasoningsInput" placeholder="盐，糖，生抽，醋" /></label>
+                  <label>工具<input id="toolsInput" placeholder="炒锅，蒸锅，空气炸锅" /></label>
+                  <label>标签<input id="tagsInput" placeholder="快手菜，便当，清淡，下饭" /></label>
+                </div>
+              </div>
+            </details>
+
+            <div class="actions">
+              <button class="primary" type="submit">保存这道菜</button>
+              <button class="ghost" id="duplicateButton" type="button">复做一版</button>
+              <label class="file-picker photo-picker">上传照片<input id="photoInput" type="file" accept="image/*" multiple /></label>
+              <button class="ghost" id="deleteButton" type="button">删除</button>
+            </div>
+            <div id="photoPreview" class="photo-preview"></div>
+          </form>
+
+          <section class="tab-view recommender" data-view="recommend">
+            <div class="recommend-head"><div><h2>我手头有什么？</h2><p>输入食材后，会优先推荐你做过、评分高、匹配食材多的菜。</p></div></div>
+            <label>今天买到的食材<input id="pantryInput" placeholder="土豆，青椒，鸡胸肉" /></label>
+            <div id="pantryShortcuts" class="shortcut-row" aria-label="常用食材快捷输入"></div>
+            <div class="recommend-controls"><button class="primary" id="recommendButton" type="button">生成推荐</button><button class="ghost" id="clearPantryButton" type="button">清空</button></div>
+            <div id="recommendations" class="recommendation-list"></div>
+          </section>
+
+          <section class="tab-view review" data-view="review">
+            <div class="review-topline">
+              <div id="focusAdvice" class="focus-advice"></div>
+              <div class="site-signature"><span>zjwssm</span><small>我自己的厨房主页</small></div>
+            </div>
+            <div class="gallery-band">
+              <h2>照片回忆</h2>
+              <div id="galleryStrip" class="gallery-strip"></div>
+            </div>
+            <div class="review-grid">
+              <article><h2>最近应该复做</h2><div id="retryList" class="compact-list"></div></article>
+              <article><h2>我的高分菜</h2><div id="favoriteList" class="compact-list"></div></article>
+              <article><h2>最近学到的东西</h2><div id="lessonList" class="compact-list"></div></article>
+              <article><h2>常用食材</h2><div id="ingredientCloud" class="chip-cloud"></div></article>
+            </div>
+          </section>
+
+          <section class="tab-view data-panel" data-view="data">
+            <div><h2>备份和迁移</h2><p>数据目前保存在浏览器本地。导出的 JSON 以后可以迁移到微信小程序云数据库。</p><p>个人站点标签：<strong>zjwssm</strong></p></div>
+            <div class="data-actions"><button class="primary" id="exportButton" type="button">导出 JSON</button><button class="ghost" id="copyDataButton" type="button">复制数据</button><label class="file-picker">导入 JSON<input id="importInput" type="file" accept="application/json" /></label></div>
+            <p id="importStatus" class="status-line" aria-live="polite"></p>
+          </section>
+        </section>
+      </section>
+    </main>
+
+    <template id="recipeItemTemplate">
+      <button class="recipe-item" type="button"><strong></strong><span></span></button>
+    </template>
+    <template id="galleryItemTemplate">
+      <button class="gallery-card" type="button"><img alt="" /><span></span></button>
+    </template>
+
+    <script src="../app.js"></script>
+  </body>
+</html>
