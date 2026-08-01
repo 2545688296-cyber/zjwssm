@@ -1,4 +1,4 @@
-# 厨艺小程序 / zjwssm
+# zjwssmdexiaochufang
 
 这是一个纯静态网站，适合直接发布到 GitHub Pages。
 

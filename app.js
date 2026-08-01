@@ -2,7 +2,7 @@ const STORAGE_KEY = "kitchen-log-v3";
 const LEGACY_STORAGE_KEY = "kitchen-log-v2";
 const DRAFT_STORAGE_KEY = "kitchen-log-drafts-v1";
 const INTRO_SEEN_KEY = "kitchen-log-intro-seen-v1";
-const SITE_TAG = "zjwssm";
+const SITE_TAG = "zjwssmdexiaochufang";
 const PHOTO_LIMIT = 8;
 const PHOTO_MAX_DIMENSION = 1400;
 const PHOTO_QUALITY = 0.82;
@@ -977,7 +977,7 @@ function exportData() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `厨房练习簿-${new Date().toISOString().slice(0, 10)}.json`;
+  link.download = `zjwssmdexiaochufang-${new Date().toISOString().slice(0, 10)}.json`;
   document.body.append(link);
   link.click();
   link.remove();
