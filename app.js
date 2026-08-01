@@ -448,6 +448,9 @@ function removePhoto(index) {
 
 function makeSummaryText() {
   const text = [
+    fields.name.value,
+    fields.source.value,
+    fields.tags.value,
     fields.prep.value,
     fields.steps.value,
     fields.tasting.value,
@@ -455,19 +458,88 @@ function makeSummaryText() {
     fields.next.value,
     fields.learned.value
   ]
+    .map((value) => String(value ?? ""))
     .join(" ")
     .replace(/\s+/g, " ");
-  const ingredientCandidates = splitText([
-    fields.ingredients.value,
-    text.match(/番茄|鸡蛋|土豆|青椒|西兰花|蒜|葱|肉|豆腐|胡萝卜|黄瓜|米饭|面条|虾|牛肉|鸡肉|排骨|洋葱|青菜|蘑菇|香菇|豆角|茄子|莲藕|玉米|山药|白菜|菠菜|豆芽|金针菇|火腿|培根|芝士|奶酪/g)?.join("，") ?? ""
-  ].join("，"));
-  const seasoningCandidates = splitText([
-    fields.seasonings.value,
-    text.match(/盐|糖|生抽|老抽|醋|蚝油|料酒|胡椒|辣椒|辣椒粉|孜然|豆瓣酱|番茄酱|酱油|芝麻油|香油|鸡精|味精/g)?.join("，") ?? ""
-  ].join("，"));
+
+  const ingredientGroups = [
+    { label: "番茄", terms: ["番茄", "西红柿"] },
+    { label: "鸡蛋", terms: ["鸡蛋"] },
+    { label: "土豆", terms: ["土豆"] },
+    { label: "青椒", terms: ["青椒", "尖椒", "彩椒"] },
+    { label: "西兰花", terms: ["西兰花", "菜花"] },
+    { label: "蒜", terms: ["蒜"] },
+    { label: "葱", terms: ["葱", "葱花"] },
+    { label: "姜", terms: ["姜"] },
+    { label: "猪肉", terms: ["猪肉", "五花肉", "里脊"] },
+    { label: "牛肉", terms: ["牛肉", "牛腩"] },
+    { label: "鸡肉", terms: ["鸡肉", "鸡腿", "鸡胸"] },
+    { label: "鸭肉", terms: ["鸭肉"] },
+    { label: "排骨", terms: ["排骨"] },
+    { label: "虾", terms: ["虾", "虾仁"] },
+    { label: "鱼", terms: ["鱼"] },
+    { label: "豆腐", terms: ["豆腐", "豆干", "豆腐皮"] },
+    { label: "豆芽", terms: ["豆芽"] },
+    { label: "胡萝卜", terms: ["胡萝卜"] },
+    { label: "黄瓜", terms: ["黄瓜"] },
+    { label: "米饭", terms: ["米饭"] },
+    { label: "面条", terms: ["面条"] },
+    { label: "洋葱", terms: ["洋葱"] },
+    { label: "香菇", terms: ["香菇"] },
+    { label: "蘑菇", terms: ["蘑菇", "金针菇"] },
+    { label: "茄子", terms: ["茄子"] },
+    { label: "豆角", terms: ["豆角"] },
+    { label: "莲藕", terms: ["莲藕"] },
+    { label: "玉米", terms: ["玉米"] },
+    { label: "山药", terms: ["山药"] },
+    { label: "白菜", terms: ["白菜"] },
+    { label: "菠菜", terms: ["菠菜"] },
+    { label: "青菜", terms: ["青菜", "生菜"] },
+    { label: "火腿", terms: ["火腿"] },
+    { label: "培根", terms: ["培根"] },
+    { label: "芝士", terms: ["芝士", "奶酪"] },
+    { label: "芹菜", terms: ["芹菜"] },
+    { label: "南瓜", terms: ["南瓜"] },
+    { label: "冬瓜", terms: ["冬瓜"] },
+    { label: "粉丝", terms: ["粉丝"] },
+    { label: "年糕", terms: ["年糕"] }
+  ];
+
+  const seasoningGroups = [
+    { label: "盐", terms: ["盐", "海盐"] },
+    { label: "糖", terms: ["糖", "白糖"] },
+    { label: "生抽", terms: ["生抽"] },
+    { label: "老抽", terms: ["老抽"] },
+    { label: "醋", terms: ["醋"] },
+    { label: "蚝油", terms: ["蚝油"] },
+    { label: "料酒", terms: ["料酒"] },
+    { label: "胡椒", terms: ["胡椒", "黑胡椒"] },
+    { label: "辣椒", terms: ["辣椒", "辣椒粉"] },
+    { label: "孜然", terms: ["孜然"] },
+    { label: "豆瓣酱", terms: ["豆瓣酱"] },
+    { label: "番茄酱", terms: ["番茄酱"] },
+    { label: "酱油", terms: ["酱油"] },
+    { label: "芝麻油", terms: ["芝麻油", "香油"] },
+    { label: "鸡精", terms: ["鸡精"] },
+    { label: "味精", terms: ["味精"] },
+    { label: "十三香", terms: ["十三香"] },
+    { label: "花椒", terms: ["花椒"] },
+    { label: "淀粉", terms: ["淀粉", "生粉"] }
+  ];
+
+  const collectTerms = (baseValue, groups) => {
+    const result = new Set(splitText(baseValue));
+    groups.forEach(({ label, terms }) => {
+      if (terms.some((term) => text.includes(term))) {
+        result.add(label);
+      }
+    });
+    return [...result].filter(Boolean);
+  };
+
   return {
-    ingredients: [...new Set(ingredientCandidates)].join("，"),
-    seasonings: [...new Set(seasoningCandidates)].join("，")
+    ingredients: collectTerms(fields.ingredients.value, ingredientGroups).join("，"),
+    seasonings: collectTerms(fields.seasonings.value, seasoningGroups).join("，")
   };
 }
 
