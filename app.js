@@ -259,7 +259,6 @@ async function loadCloudRecipes() {
     .order("updated_at", { ascending: false });
 
   if (error) {
-    cloudReady = false;
     setSyncStatus(`云同步读取失败：${error.message}`);
     return;
   }
@@ -274,12 +273,13 @@ async function loadCloudRecipes() {
     return;
   }
 
+  cloudReady = true;
   await saveCloudRecipes();
   setSyncStatus(`云端已初始化 ${recipes.length} 道菜。`);
 }
 
 async function saveCloudRecipes() {
-  if (!cloudReady || !supabaseClient) {
+  if (!supabaseClient) {
     return;
   }
 
