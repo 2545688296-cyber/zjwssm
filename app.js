@@ -8,6 +8,13 @@ const PHOTO_MAX_DIMENSION = 1400;
 const PHOTO_QUALITY = 0.82;
 
 const nowIso = () => new Date().toISOString();
+const supabaseConfig = window.KITCHEN_SUPABASE_CONFIG || null;
+const supabaseClient = supabaseConfig?.url && supabaseConfig?.anonKey && window.supabase
+  ? window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey)
+  : null;
+const CLOUD_OWNER_ID = supabaseConfig?.ownerId || SITE_TAG;
+let cloudReady = false;
+let cloudSyncTimer = null;
 
 const sampleRecipes = [
   {
@@ -210,10 +217,84 @@ function normalizeRecipe(recipe) {
 
 function saveRecipes() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(recipes));
+  scheduleCloudSave();
 }
 
 function saveDrafts() {
   localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(drafts));
+}
+
+function setSyncStatus(message) {
+  if (fields.importStatus) {
+    fields.importStatus.textContent = message;
+  }
+}
+
+function setRecipes(nextRecipes) {
+  recipes = nextRecipes.map(normalizeRecipe);
+  selectedId = recipes[0]?.id ?? selectedId ?? null;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(recipes));
+}
+
+function scheduleCloudSave() {
+  if (!cloudReady || !supabaseClient) {
+    return;
+  }
+
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = setTimeout(saveCloudRecipes, 500);
+}
+
+async function loadCloudRecipes() {
+  if (!supabaseClient) {
+    setSyncStatus("云同步未配置，当前只保存在本机浏览器。");
+    return;
+  }
+
+  setSyncStatus("正在从云端同步菜品...");
+  const { data, error } = await supabaseClient
+    .from("recipes")
+    .select("payload")
+    .eq("owner_id", CLOUD_OWNER_ID)
+    .order("updated_at", { ascending: false });
+
+  if (error) {
+    cloudReady = false;
+    setSyncStatus(`云同步读取失败：${error.message}`);
+    return;
+  }
+
+  cloudReady = true;
+  const cloudRecipes = (data || []).map((row) => row.payload).filter(Boolean);
+  if (cloudRecipes.length) {
+    setRecipes(cloudRecipes);
+    selectedId = recipes[0]?.id ?? null;
+    renderAll();
+    setSyncStatus(`已从云端同步 ${recipes.length} 道菜。`);
+    return;
+  }
+
+  await saveCloudRecipes();
+  setSyncStatus(`云端已初始化 ${recipes.length} 道菜。`);
+}
+
+async function saveCloudRecipes() {
+  if (!cloudReady || !supabaseClient) {
+    return;
+  }
+
+  const rows = recipes.map((recipe) => ({
+    id: recipe.id,
+    owner_id: CLOUD_OWNER_ID,
+    payload: recipe,
+    updated_at: recipe.updatedAt || nowIso()
+  }));
+
+  const { error } = await supabaseClient
+    .from("recipes")
+    .upsert(rows, { onConflict: "id" });
+
+  setSyncStatus(error ? `云同步保存失败：${error.message}` : "已同步到云端。");
 }
 
 function markDirty() {
@@ -1130,3 +1211,6 @@ fields.introViewButton?.addEventListener("click", () => {
 saveRecipes();
 updateIntroVisibility();
 renderAll();
+loadCloudRecipes().catch((error) => {
+  setSyncStatus(`云同步异常：${error.message}`);
+});

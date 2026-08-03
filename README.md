@@ -41,3 +41,14 @@ GitHub Pages 公开部署步骤：
 ## 说明
 
 这是静态前端站，没有后端和登录。公开网址能不能打开，取决于你是否完成 GitHub Pages 发布。
+
+## Supabase 同步
+
+要让不同设备看到同一份菜品：
+
+1. 在 Supabase 创建项目
+2. 把 `supabase-schema.sql` 里的 SQL 粘进去执行
+3. 把 `supabase-config.js` 里的 `url` 和 `anonKey` 填好
+4. 重新部署 GitHub Pages
+
+现在这套同步是共享同一个公开菜谱库，不需要登录。后面如果你要独立账号，再加认证。
