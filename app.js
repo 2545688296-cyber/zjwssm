@@ -151,6 +151,7 @@ const fields = {
   lessonList: document.querySelector("#lessonList"),
   ingredientCloud: document.querySelector("#ingredientCloud"),
   exportButton: document.querySelector("#exportButton"),
+  cloudInitButton: document.querySelector("#cloudInitButton"),
   copyDataButton: document.querySelector("#copyDataButton"),
   importInput: document.querySelector("#importInput"),
   importStatus: document.querySelector("#importStatus")
@@ -295,6 +296,15 @@ async function saveCloudRecipes() {
     .upsert(rows, { onConflict: "id" });
 
   setSyncStatus(error ? `云同步保存失败：${error.message}` : "已同步到云端。");
+}
+
+async function initializeCloud() {
+  if (!supabaseClient) {
+    setSyncStatus("云同步未配置。");
+    return;
+  }
+  cloudReady = true;
+  await saveCloudRecipes();
 }
 
 function markDirty() {
@@ -1191,6 +1201,11 @@ fields.clearPantryButton.addEventListener("click", () => {
 });
 fields.pantry.addEventListener("input", renderRecommendations);
 fields.exportButton.addEventListener("click", exportData);
+fields.cloudInitButton?.addEventListener("click", () => {
+  initializeCloud().catch((error) => {
+    setSyncStatus(`初始化云端失败：${error.message}`);
+  });
+});
 fields.copyDataButton.addEventListener("click", copyData);
 fields.importInput.addEventListener("change", (event) => importData(event.target.files[0]));
 fields.form.addEventListener("input", () => {
