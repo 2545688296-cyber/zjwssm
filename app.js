@@ -237,6 +237,51 @@ function setRecipes(nextRecipes) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(recipes));
 }
 
+function cloudRowsFromRecipes(nextRecipes) {
+  return nextRecipes.map((recipe) => ({
+    id: recipe.id,
+    owner_id: CLOUD_OWNER_ID,
+    payload: recipe,
+    updated_at: recipe.updatedAt || nowIso()
+  }));
+}
+
+async function pruneCloudRecipes(keepIds) {
+  if (!supabaseClient) {
+    return { error: new Error("云同步未配置。") };
+  }
+
+  if (!keepIds.length) {
+    return supabaseClient
+      .from("recipes")
+      .delete()
+      .eq("owner_id", CLOUD_OWNER_ID);
+  }
+
+  const keepIdSet = new Set(keepIds);
+  const { data, error } = await supabaseClient
+    .from("recipes")
+    .select("id")
+    .eq("owner_id", CLOUD_OWNER_ID);
+
+  if (error) {
+    return { error };
+  }
+
+  const staleIds = (data || [])
+    .map((row) => row.id)
+    .filter((id) => !keepIdSet.has(id));
+
+  if (!staleIds.length) {
+    return { error: null };
+  }
+
+  return supabaseClient
+    .from("recipes")
+    .delete()
+    .in("id", staleIds);
+}
+
 function scheduleCloudSave() {
   if (!cloudReady || !supabaseClient) {
     return;
@@ -252,10 +297,11 @@ async function loadCloudRecipes() {
     return;
   }
 
+  cloudReady = true;
   setSyncStatus("正在从云端同步菜品...");
   const { data, error } = await supabaseClient
     .from("recipes")
-    .select("payload")
+    .select("id, payload, updated_at")
     .eq("owner_id", CLOUD_OWNER_ID)
     .order("updated_at", { ascending: false });
 
@@ -264,7 +310,6 @@ async function loadCloudRecipes() {
     return;
   }
 
-  cloudReady = true;
   const cloudRecipes = (data || []).map((row) => row.payload).filter(Boolean);
   if (cloudRecipes.length) {
     setRecipes(cloudRecipes);
@@ -274,28 +319,48 @@ async function loadCloudRecipes() {
     return;
   }
 
-  cloudReady = true;
   await saveCloudRecipes();
   setSyncStatus(`云端已初始化 ${recipes.length} 道菜。`);
 }
 
 async function saveCloudRecipes() {
   if (!supabaseClient) {
-    return;
+    return false;
   }
 
-  const rows = recipes.map((recipe) => ({
-    id: recipe.id,
-    owner_id: CLOUD_OWNER_ID,
-    payload: recipe,
-    updated_at: recipe.updatedAt || nowIso()
-  }));
+  const rows = cloudRowsFromRecipes(recipes);
+  if (!rows.length) {
+    const { error: deleteError } = await supabaseClient
+      .from("recipes")
+      .delete()
+      .eq("owner_id", CLOUD_OWNER_ID);
 
-  const { error } = await supabaseClient
+    if (deleteError) {
+      setSyncStatus(`云同步保存失败：${deleteError.message}`);
+      return false;
+    }
+
+    setSyncStatus("已同步到云端（已清空云端旧数据）。");
+    return true;
+  }
+
+  const { error: upsertError } = await supabaseClient
     .from("recipes")
     .upsert(rows, { onConflict: "id" });
 
-  setSyncStatus(error ? `云同步保存失败：${error.message}` : "已同步到云端。");
+  if (upsertError) {
+    setSyncStatus(`云同步保存失败：${upsertError.message}`);
+    return false;
+  }
+
+  const { error: pruneError } = await pruneCloudRecipes(rows.map((row) => row.id));
+  if (pruneError) {
+    setSyncStatus(`云同步保存失败：${pruneError.message}`);
+    return false;
+  }
+
+  setSyncStatus(`已同步到云端 ${recipes.length} 道菜。`);
+  return true;
 }
 
 async function initializeCloud() {
@@ -304,7 +369,10 @@ async function initializeCloud() {
     return;
   }
   cloudReady = true;
-  await saveCloudRecipes();
+  const synced = await saveCloudRecipes();
+  if (synced) {
+    setSyncStatus(`云端已初始化 ${recipes.length} 道菜。`);
+  }
 }
 
 function markDirty() {
